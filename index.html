@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="sr" class="dark h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoExpert Analytics - Agregator i Analitika Tržišta Automobila</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js for analytics visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#172554',
+            },
+            accent: {
+              green: '#10b981',
+              amber: '#f59e0b',
+              red: '#ef4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Glassmorphism custom styling */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.25s ease-in-out;
+    }
+    .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('oglasi')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-blue-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+            <i class="fa-solid fa-car-burst text-xl"></i>
+          </div>
+          <div>
+            <span class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">
+              AutoExpert
+            </span>
+            <span class="text-xs font-semibold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-500 ml-1.5 uppercase tracking-wider">
+              Analytics
+            </span>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden md:flex items-center space-x-1">
+          <button id="nav-oglasi" onclick="switchTab('oglasi')" class="nav-link active px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white bg-slate-800/80 border border-slate-700/50">
+            <i class="fa-solid fa-list-ul mr-2 text-brand-500"></i>Oglasi & Analiza
+          </button>
+          <button id="nav-trziste" onclick="switchTab('trziste')" class="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50">
+            <i class="fa-solid fa-chart-line mr-2 text-brand-500"></i>Tržišne Tendencije
+          </button>
+          <button id="nav-kalkulator" onclick="switchTab('kalkulator')" class="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50">
+            <i class="fa-solid fa-calculator mr-2 text-brand-500"></i>Kalkulator Uvoza
+          </button>
+          <button id="nav-sacuvani" onclick="switchTab('sacuvani')" class="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/50 relative">
+            <i class="fa-solid fa-heart mr-2 text-red-500"></i>Sačuvani
+            <span id="fav-count" class="ml-1.5 px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400 text-xs font-bold">0</span>
+          </button>
+        </nav>
+
+        <!-- Stats pill -->
+        <div class="hidden lg:flex items-center gap-4 text-xs text-slate-400 border-l border-slate-800 pl-6">
+          <div>
+            <div class="text-slate-500">Praćenih oglasa</div>
+            <div class="font-semibold text-slate-200"><span id="stat-count">…</span> vozila</div>
+          </div>
+          <div>
+            <div class="text-slate-500">Ažurirano</div>
+            <div class="font-semibold text-emerald-400 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> <span id="stat-updated">Uživo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile menu button -->
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900 px-4 pt-2 pb-4 space-y-1">
+      <button onclick="switchTab('oglasi'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-white bg-slate-800">
+        <i class="fa-solid fa-list-ul mr-2 text-brand-500"></i>Oglasi & Analiza
+      </button>
+      <button onclick="switchTab('trziste'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300">
+        <i class="fa-solid fa-chart-line mr-2 text-brand-500"></i>Tržišne Tendencije
+      </button>
+      <button onclick="switchTab('kalkulator'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300">
+        <i class="fa-solid fa-calculator mr-2 text-brand-500"></i>Kalkulator Uvoza
+      </button>
+      <button onclick="switchTab('sacuvani'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-300">
+        <i class="fa-solid fa-heart mr-2 text-red-500"></i>Sačuvani Oglasi
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- TAB 1: OGLASI I ANALITIKA -->
+    <div id="tab-oglasi" class="tab-content">
+      
+      <!-- HERO & QUICK SEARCH BANNER -->
+      <div class="mb-6 rounded-2xl bg-gradient-to-r from-brand-950 via-slate-900 to-slate-950 border border-slate-800/80 p-6 relative overflow-hidden shadow-2xl">
+        <div class="absolute -right-10 -bottom-10 w-80 h-80 bg-brand-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 max-w-3xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-semibold mb-3">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Napredna AE Algoritamska Evaluacija
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Pronađite automobile ispod tržišne vrednosti sa procenom rizika
+          </h1>
+          <p class="mt-2 text-sm text-slate-400">
+            Kombinujemo pametno prikupljanje podataka sa regionalnih auto oglasa, procenu habanja i analizu istorije cene u realnom vremenu.
+          </p>
+
+          <!-- Fast Search Bar -->
+          <div class="mt-5 flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500"></i>
+              <input type="text" id="quick-search" oninput="applyFilters()" placeholder="Pretraži npr. 'Audi A4 2.0 TDI', 'Volkswagen Golf'..." class="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-slate-100 placeholder-slate-500">
+            </div>
+            <button onclick="resetFilters()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-xl border border-slate-700 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-rotate-left text-xs"></i> Resetuj filtere
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN LAYOUT: FILTERS (LEFT) + LISTINGS (RIGHT) -->
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- FILTER SIDEBAR -->
+        <div class="lg:col-span-1 space-y-4">
+          <div class="glass-panel p-5 rounded-2xl sticky top-20 border border-slate-800/80">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+              <h2 class="font-bold text-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-brand-500"></i> Filteri Pretrage
+              </h2>
+              <span id="active-filter-badge" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">0 filtera</span>
+            </div>
+
+            <div class="mt-4 space-y-4 text-sm">
+
+              <!-- Marka -->
+              <div>
+                <label class="block font-medium text-slate-300 mb-1.5 text-xs uppercase tracking-wider">Marka vozila</label>
+                <select id="filter-brand" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 focus:outline-none">
+                  <option value="">Sve marke</option>
+                  <option value="Audi">Audi</option>
+                  <option value="BMW">BMW</option>
+                  <option value="Volkswagen">Volkswagen</option>
+                  <option value="Mercedes-Benz">Mercedes-Benz</option>
+                  <option value="Peugeot">Peugeot</option>
+                  <option value="Toyota">Toyota</option>
+                  <option value="Skoda">Škoda</option>
+                </select>
+              </div>
+
+              <!-- Price Range -->
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="font-medium text-slate-300 text-xs uppercase tracking-wider">Cena (€)</label>
+                  <span id="price-val-text" class="text-xs font-mono text-brand-400">Do 50,000 €</span>
+                </div>
+                <input type="range" id="filter-max-price" min="2000" max="60000" step="1000" value="60000" oninput="updatePriceLabel(); applyFilters()" class="w-full accent-brand-500 bg-slate-800 rounded-lg cursor-pointer h-2">
+                <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+                  <span>2,000€</span>
+                  <span>30,000€</span>
+                  <span>60,000€</span>
+                </div>
+              </div>
+
+              <!-- Year Range -->
+              <div>
+                <label class="block font-medium text-slate-300 mb-1.5 text-xs uppercase tracking-wider">Godište (Od)</label>
+                <select id="filter-min-year" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 focus:outline-none">
+                  <option value="">Sva godišta</option>
+                  <option value="2010">2010+</option>
+                  <option value="2014">2014+</option>
+                  <option value="2017">2017+</option>
+                  <option value="2020">2020+</option>
+                </select>
+              </div>
+
+              <!-- Fuel Type -->
+              <div>
+                <label class="block font-medium text-slate-300 mb-1.5 text-xs uppercase tracking-wider">Gorivo</label>
+                <select id="filter-fuel" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 focus:outline-none">
+                  <option value="">Sva goriva</option>
+                  <option value="Dizel">Dizel</option>
+                  <option value="Benzin">Benzin</option>
+                  <option value="Hibrid">Hibrid</option>
+                  <option value="Električni">Električni</option>
+                </select>
+              </div>
+
+              <!-- Risk Level -->
+              <div>
+                <label class="block font-medium text-slate-300 mb-1.5 text-xs uppercase tracking-wider">Nivo Rizika</label>
+                <select id="filter-risk" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 focus:outline-none">
+                  <option value="">Svi nivoi rizika</option>
+                  <option value="Nizak">Nizak rizik (Provereno)</option>
+                  <option value="Srednji">Srednji rizik</option>
+                  <option value="Visok">Visok rizik</option>
+                </select>
+              </div>
+
+              <!-- Deal Rating filter -->
+              <div>
+                <label class="block font-medium text-slate-300 mb-1.5 text-xs uppercase tracking-wider">Procena Cene</label>
+                <select id="filter-deal" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-brand-500 focus:outline-none">
+                  <option value="">Sve procene</option>
+                  <option value="ispod">Ispod tržišne cene (Povoljno)</option>
+                  <option value="fer">Fer tržišna cena</option>
+                  <option value="iznad">Iznad proseka</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTINGS AREA -->
+        <div class="lg:col-span-3 space-y-4">
+
+          <!-- Sorting & Stats Header -->
+          <div class="glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-slate-800/80">
+            <div class="text-sm text-slate-400">
+              Prikazano <span id="results-count" class="font-bold text-white">0</span> procenjenih vozila
+            </div>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <label for="sort-select" class="text-xs text-slate-400 whitespace-nowrap">Sortiraj po:</label>
+              <select id="sort-select" onchange="applyFilters()" class="bg-slate-900 border border-slate-800 text-xs rounded-lg px-3 py-2 text-slate-200 focus:border-brand-500 focus:outline-none font-medium">
+                <option value="score-desc">AE Oceni (Najbolje ocenjeno)</option>
+                <option value="price-asc">Ceni (Od najjeftinijeg)</option>
+                <option value="price-desc">Ceni (Od najskupljeg)</option>
+                <option value="year-desc">Godištu (Najnovije)</option>
+                <option value="km-asc">Kilometraži (Najmanja)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- CAR CARDS CONTAINER -->
+          <div id="cars-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamic Injection via JS -->
+          </div>
+
+          <!-- Empty State -->
+          <div id="no-results" class="hidden glass-panel p-12 text-center rounded-2xl border border-slate-800/80 my-8">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-2xl">
+              <i class="fa-solid fa-car-tunnel"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-200">Nema pronadjeni vozila</h3>
+            <p class="text-sm text-slate-400 mt-1">Pokušajte sa blažim kriterijumima pretrage ili resetujte filtere.</p>
+            <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition">
+              Resetuj sve filtere
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 2: TRŽIŠNE TENDENCIJE & ANALITIKA -->
+    <div id="tab-trziste" class="tab-content hidden space-y-6">
+      <div class="glass-panel p-6 rounded-2xl border border-slate-800/80">
+        <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-brand-500"></i> Analiza Kretanja Ceno na Tržištu (Srbija & Region)
+        </h2>
+        <p class="text-sm text-slate-400 mb-6">
+          Sistem automatski meri prosečan pad vrednosti (amortizaciju) i kretanje potražnje za najpopularnijim brendovima u poslednjih 12 meseci.
+        </p>
+
+        <!-- Analytics Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+            <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center justify-between">
+              <span>Prosečan Pad Vrednosti po Klasama (%)</span>
+              <span class="text-xs font-normal text-slate-500">Godišnji prosek</span>
+            </h3>
+            <div class="h-64">
+              <canvas id="depreciationChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+            <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center justify-between">
+              <span>Indeks Potražnje i Prodaje po Gorivu</span>
+              <span class="text-xs font-normal text-slate-500">Q3/Q4 Podaci</span>
+            </h3>
+            <div class="h-64">
+              <canvas id="fuelDemandChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market Insights Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-card p-5 rounded-xl">
+          <div class="text-emerald-400 text-2xl mb-2"><i class="fa-solid fa-arrow-trend-down"></i></div>
+          <h4 class="font-bold text-slate-200 text-sm">Najbrži Pad Cene</h4>
+          <p class="text-xs text-slate-400 mt-1">Luksuzne limuzine visoke klase (Dizel, Euro 5) beleže pad od 12.4% na godišnjem nivou usled ekoloških taksi.</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="text-brand-400 text-2xl mb-2"><i class="fa-solid fa-shield-halved"></i></div>
+          <h4 class="font-bold text-slate-200 text-sm">Najstabilnija Vrednost</h4>
+          <p class="text-xs text-slate-400 mt-1">Kompaktni hibridni SUV modeli (Toyota, Honda) zadržavaju preko 88% vrednosti nakon 3 godine.</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="text-amber-400 text-2xl mb-2"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h4 class="font-bold text-slate-200 text-sm">Uvozni Rizici 2026</h4>
+          <p class="text-xs text-slate-400 mt-1">Poostrena kontrola vraćanja kilometraže na tehničkim pregledima povećala je razliku u ceni između proverenih i neproverenih uvoza.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: KALKULATOR UVOZA I CARINE -->
+    <div id="tab-kalkulator" class="tab-content hidden">
+      <div class="max-w-4xl mx-auto">
+        <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-slate-800/80 shadow-xl">
+          <div class="border-b border-slate-800 pb-5 mb-6">
+            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+              <i class="fa-solid fa-calculator text-brand-500"></i> Kalkulator Troškova Uvoza i Carine
+            </h2>
+            <p class="text-sm text-slate-400 mt-1">
+              Procenite kompletne troškove uvoza polovnog automobila u Srbiju (Carina, PDV, AMSS homologacija, ekološka taksa).
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Inputs -->
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Kupovna Cena u Inostranstvu (€)</label>
+                <input type="number" id="calc-price" value="12500" oninput="calculateImportDuty()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-sm focus:border-brand-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Zapremina Motora (cm³)</label>
+                <input type="number" id="calc-cc" value="1968" oninput="calculateImportDuty()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-sm focus:border-brand-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Snaga Motora (kW)</label>
+                <input type="number" id="calc-kw" value="110" oninput="calculateImportDuty()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 font-mono text-sm focus:border-brand-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Euro Norma / Godište</label>
+                <select id="calc-euro" onchange="calculateImportDuty()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 text-sm focus:border-brand-500 focus:outline-none">
+                  <option value="euro6">Euro 6 (2015+)</option>
+                  <option value="euro5">Euro 5 (2009 - 2014)</option>
+                  <option value="euro4">Euro 4 (Nije dozvoljen uvoz za većinu)</option>
+                </select>
+              </div>
+
+              <div class="pt-2">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="calc-eur1" checked onchange="calculateImportDuty()" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-600 focus:ring-brand-500">
+                  <span class="text-xs text-slate-300">Poseduje EUR-1 ili Izjavu na računu (0% carine za EU poreklo)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Output Calculation breakdown -->
+            <div class="bg-slate-900/90 rounded-xl p-5 border border-slate-800 flex flex-col justify-between">
+              <div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">
+                  Specifikacija Troškova Uvoza
+                </h3>
+
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between items-center text-slate-300">
+                    <span>Carina (<span id="out-carina-pct">0%</span>):</span>
+                    <span id="out-carina" class="font-mono font-medium">0 €</span>
+                  </div>
+                  <div class="flex justify-between items-center text-slate-300">
+                    <span>PDV (20% na osnovicu):</span>
+                    <span id="out-pdv" class="font-mono font-medium">2,500 €</span>
+                  </div>
+                  <div class="flex justify-between items-center text-slate-300">
+                    <span>AMSS Uverenje & Homologacija:</span>
+                    <span id="out-amss" class="font-mono font-medium">120 €</span>
+                  </div>
+                  <div class="flex justify-between items-center text-slate-300">
+                    <span>Eko Taksa & Transport (procena):</span>
+                    <span id="out-eko" class="font-mono font-medium">550 €</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-6 pt-4 border-t border-slate-800">
+                <div class="flex justify-between items-baseline mb-1">
+                  <span class="text-xs uppercase text-slate-400 font-bold">Ukupni Dodatni Troškovi:</span>
+                  <span id="out-total-duty" class="text-xl font-extrabold text-brand-400 font-mono">3,170 €</span>
+                </div>
+                <div class="flex justify-between items-baseline pt-2 border-t border-slate-800/50">
+                  <span class="text-sm font-bold text-white">Ukupna Cena do Registracije:</span>
+                  <span id="out-grand-total" class="text-2xl font-black text-emerald-400 font-mono">15,670 €</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: SAČUVANI OGLASI -->
+    <div id="tab-sacuvani" class="tab-content hidden">
+      <div class="glass-panel p-6 rounded-2xl border border-slate-800/80">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-heart text-red-500"></i> Sačuvani Oglasi
+        </h2>
+        <div id="fav-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Dynamic injection -->
+        </div>
+        <div id="fav-empty" class="text-center py-12 text-slate-500">
+          <i class="fa-regular fa-heart text-4xl mb-3"></i>
+          <p>Nemate sačuvanih oglasa. Kliknite na ikonicu srca na kartici automobila da biste ga sačuvali.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- CAR DETAILS ANALYTICS MODAL -->
+  <div id="car-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-3xl glass-panel rounded-2xl border border-slate-700 shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div class="flex items-center gap-3">
+          <span id="modal-brand-logo" class="px-2.5 py-1 rounded bg-brand-500/20 text-brand-400 font-bold text-xs">
+            BMW
+          </span>
+          <h3 id="modal-title" class="text-lg font-bold text-white">BMW Serija 3 320d GT xDrive</h3>
+        </div>
+        <button onclick="closeModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Content Scrollable -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1">
+        
+        <!-- Top Stats Banner -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-500">Istaknuta Cena</span>
+            <div id="modal-price" class="text-lg font-extrabold text-white font-mono">14,900 €</div>
+          </div>
+          <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-500">Procena Tržišta</span>
+            <div id="modal-market-val" class="text-sm font-bold text-emerald-400 font-mono mt-0.5">15,800 €</div>
+          </div>
+          <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-500">AE Ocena</span>
+            <div id="modal-score" class="text-lg font-black text-brand-400">8.9 / 10</div>
+          </div>
+          <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-500">Procena Rizika</span>
+            <div id="modal-risk" class="text-xs font-bold text-emerald-400 mt-1">Nizak Rizik</div>
+          </div>
+        </div>
+
+        <!-- Spec Highlights -->
+        <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tehničke Specifikacije</h4>
+          <div id="modal-specs-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+            <!-- Dynamic -->
+          </div>
+        </div>
+
+        <!-- AE Market Valuation Deep Analysis -->
+        <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3">
+          <h4 class="text-sm font-bold text-white flex items-center justify-between">
+            <span><i class="fa-solid fa-chart-line text-brand-500 mr-2"></i>Analiza Odnosa Cene i Tržišta</span>
+            <span id="modal-deal-tag" class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">Ispod Tržišne Cene</span>
+          </h4>
+          <p id="modal-deal-desc" class="text-xs text-slate-300 leading-relaxed">
+            Ovo vozilo je procenjeno kao izuzetno povoljna kupovina. Cena je za oko 900€ niža od proseka za isti model, godište i paket opreme u regionu.
+          </p>
+          
+          <!-- Key Inspection Checklist -->
+          <div class="pt-2">
+            <span class="text-xs font-semibold text-slate-400 block mb-2">Preporučene Provere za ovaj model:</span>
+            <ul id="modal-checks" class="text-xs space-y-1.5 text-slate-300">
+              <!-- Dynamic -->
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/90 flex flex-wrap gap-3 items-center justify-between">
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition">
+          Zatvori
+        </button>
+        <a id="modal-external-link" href="#" target="_blank" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center gap-2">
+          Otvorite Originalni Oglas <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // --- RICH MOCK VEHICLE DATABASE ---
+    let CAR_DATA = []; // puni se iz /api/listings (vidi live.js)
+
+    // --- STATE MANAGEMENT ---
+    let favorites = new Set(JSON.parse(localStorage.getItem('ae_favs') || '[]'));
+    let chartsInitialized = false;
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+      updateFavBadge();
+      applyFilters();
+      calculateImportDuty();
+    };
+
+    // --- TAB NAVIGATION ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-link').forEach(el => {
+        el.classList.remove('active', 'bg-slate-800/80', 'text-white', 'border', 'border-slate-700/50');
+        el.classList.add('text-slate-400');
+      });
+
+      const activeTab = document.getElementById(`tab-${tabId}`);
+      if(activeTab) activeTab.classList.remove('hidden');
+
+      const navBtn = document.getElementById(`nav-${tabId}`);
+      if(navBtn) {
+        navBtn.classList.add('active', 'bg-slate-800/80', 'text-white', 'border', 'border-slate-700/50');
+        navBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'trziste' && !chartsInitialized) {
+        initCharts();
+        chartsInitialized = true;
+      }
+
+      if (tabId === 'sacuvani') {
+        renderFavorites();
+      }
+    }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('hidden');
+    }
+
+    // --- FILTER & RENDER LOGIC ---
+    function updatePriceLabel() {
+      const val = document.getElementById('filter-max-price').value;
+      document.getElementById('price-val-text').innerText = `Do ${parseInt(val).toLocaleString()} €`;
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('quick-search').value.toLowerCase();
+      const brand = document.getElementById('filter-brand').value;
+      const maxPrice = parseInt(document.getElementById('filter-max-price').value);
+      const minYear = document.getElementById('filter-min-year').value;
+      const fuel = document.getElementById('filter-fuel').value;
+      const risk = document.getElementById('filter-risk').value;
+      const deal = document.getElementById('filter-deal').value;
+      const sort = document.getElementById('sort-select').value;
+
+      let activeFiltersCount = 0;
+      if (brand) activeFiltersCount++;
+      if (maxPrice < 60000) activeFiltersCount++;
+      if (minYear) activeFiltersCount++;
+      if (fuel) activeFiltersCount++;
+      if (risk) activeFiltersCount++;
+      if (deal) activeFiltersCount++;
+      if (search) activeFiltersCount++;
+
+      document.getElementById('active-filter-badge').innerText = `${activeFiltersCount} filtera`;
+
+      let filtered = CAR_DATA.filter(car => {
+        if (search && !`${car.brand} ${car.model}`.toLowerCase().includes(search)) return false;
+        if (brand && car.brand !== brand) return false;
+        if (car.price > maxPrice) return false;
+        if (minYear && car.year < parseInt(minYear)) return false;
+        if (fuel && car.fuel !== fuel) return false;
+        if (risk && car.risk !== risk) return false;
+
+        const diff = car.marketPrice - car.price;
+        if (deal === 'ispod' && diff <= 300) return false;
+        if (deal === 'fer' && (diff > 300 || diff < -300)) return false;
+        if (deal === 'iznad' && diff >= -300) return false;
+
+        return true;
+      });
+
+      // Sorting
+      filtered.sort((a, b) => {
+        if (sort === 'score-desc') return b.score - a.score;
+        if (sort === 'price-asc') return a.price - b.price;
+        if (sort === 'price-desc') return b.price - a.price;
+        if (sort === 'year-desc') return b.year - a.year;
+        if (sort === 'km-asc') return a.mileage - b.mileage;
+        return 0;
+      });
+
+      document.getElementById('results-count').innerText = filtered.length;
+      
+      const grid = document.getElementById('cars-grid');
+      const noResults = document.getElementById('no-results');
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        noResults.classList.remove('hidden');
+      } else {
+        noResults.classList.add('hidden');
+        grid.innerHTML = filtered.map(car => createCarCardHTML(car)).join('');
+      }
+    }
+
+    function resetFilters() {
+      document.getElementById('quick-search').value = '';
+      document.getElementById('filter-brand').value = '';
+      document.getElementById('filter-max-price').value = 60000;
+      document.getElementById('filter-min-year').value = '';
+      document.getElementById('filter-fuel').value = '';
+      document.getElementById('filter-risk').value = '';
+      document.getElementById('filter-deal').value = '';
+      document.getElementById('sort-select').value = 'score-desc';
+      updatePriceLabel();
+      applyFilters();
+    }
+
+    // --- CARD HTML GENERATOR ---
+    function createCarCardHTML(car) {
+      const isFav = favorites.has(car.id);
+      const priceDiff = car.marketPrice - car.price;
+      
+      let dealBadge = '';
+      if (priceDiff > 300) {
+        dealBadge = `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold text-[11px]"><i class="fa-solid fa-arrow-down mr-1"></i>Ispod tržišne za ${priceDiff.toLocaleString()}€</span>`;
+      } else if (priceDiff < -300) {
+        dealBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-semibold text-[11px]"><i class="fa-solid fa-arrow-up mr-1"></i>Iznad proseka za ${Math.abs(priceDiff).toLocaleString()}€</span>`;
+      } else {
+        dealBadge = `<span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold text-[11px]"><i class="fa-solid fa-check mr-1"></i>Fer cena</span>`;
+      }
+
+      let riskColor = "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+      if (car.risk === "Srednji") riskColor = "text-amber-400 border-amber-500/30 bg-amber-500/10";
+      if (car.risk === "Visok") riskColor = "text-red-400 border-red-500/30 bg-red-500/10";
+
+      return `
+        <div class="glass-card rounded-2xl overflow-hidden flex flex-col justify-between border border-slate-800/80">
+          <div>
+            <!-- Image & Badges -->
+            <div class="relative h-48 w-full bg-slate-900 overflow-hidden">
+              <img src="${car.image}" alt="${car.brand} ${car.model}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy" onerror="this.src='https://placehold.co/800x500/1e293b/white?text=AutoExpert'">
+              
+              <!-- Top Left: AE Score -->
+              <div class="absolute top-3 left-3 bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-xl px-2.5 py-1 flex items-center gap-1.5 shadow-lg">
+                <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                <span class="text-xs font-black text-white font-mono">${car.score}</span>
+                <span class="text-[10px] text-slate-400 font-sans">AE Ocena</span>
+              </div>
+
+              <!-- Top Right: Favorite Button -->
+              <button onclick="toggleFavorite('${car.id}')" class="absolute top-3 right-3 w-8 h-8 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-red-500 transition">
+                <i class="${isFav ? 'fa-solid text-red-500' : 'fa-regular'} fa-heart"></i>
+              </button>
+
+              <!-- Bottom Overlay: Deal Status -->
+              <div class="absolute bottom-2 left-3">
+                ${dealBadge}
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h3 class="font-bold text-slate-100 text-base leading-tight">${car.brand} ${car.model}</h3>
+                  <p class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-location-dot text-brand-500 mr-1"></i>${car.location}</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-lg font-extrabold text-white font-mono">${car.price.toLocaleString()} €</div>
+                  <div class="text-[10px] text-slate-500 line-through font-mono">${car.marketPrice.toLocaleString()} €</div>
+                </div>
+              </div>
+
+              <!-- Quick Specs Grid -->
+              <div class="grid grid-cols-3 gap-2 py-2 border-y border-slate-800/80 text-[11px] text-slate-300">
+                <div class="flex items-center gap-1.5">
+                  <i class="fa-regular fa-calendar text-slate-500"></i>
+                  <span>${car.year}. god.</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-gauge-high text-slate-500"></i>
+                  <span>${(car.mileage / 1000).toFixed(0)}k km</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-gas-pump text-slate-500"></i>
+                  <span>${car.fuel}</span>
+                </div>
+              </div>
+
+              <!-- Risk Indicator -->
+              <div class="flex items-center justify-between text-xs pt-1">
+                <span class="text-slate-400 text-[11px]">Procena Rizika:</span>
+                <span class="px-2 py-0.5 rounded-full border text-[11px] font-semibold ${riskColor}">
+                  ${car.risk} Rizik
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Action Button -->
+          <div class="p-4 pt-0">
+            <button onclick="openModal('${car.id}')" class="w-full py-2 bg-slate-800 hover:bg-brand-600 hover:text-white text-slate-300 text-xs font-bold rounded-xl border border-slate-700/80 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-magnifying-glass-chart"></i> Detaljna AE Analiza
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- FAVORITES SYSTEM ---
+    function toggleFavorite(id) {
+      if (favorites.has(id)) {
+        favorites.delete(id);
+      } else {
+        favorites.add(id);
+      }
+      localStorage.setItem('ae_favs', JSON.stringify([...favorites]));
+      updateFavBadge();
+      applyFilters();
+      if (!document.getElementById('tab-sacuvani').classList.contains('hidden')) {
+        renderFavorites();
+      }
+    }
+
+    function updateFavBadge() {
+      document.getElementById('fav-count').innerText = favorites.size;
+    }
+
+    function renderFavorites() {
+      const favGrid = document.getElementById('fav-grid');
+      const favEmpty = document.getElementById('fav-empty');
+
+      const favCars = CAR_DATA.filter(car => favorites.has(car.id));
+
+      if (favCars.length === 0) {
+        favGrid.innerHTML = '';
+        favEmpty.classList.remove('hidden');
+      } else {
+        favEmpty.classList.add('hidden');
+        favGrid.innerHTML = favCars.map(car => createCarCardHTML(car)).join('');
+      }
+    }
+
+    // --- MODAL DETAILED BREAKDOWN ---
+    function openModal(carId) {
+      const car = CAR_DATA.find(c => c.id === carId);
+      if(!car) return;
+
+      document.getElementById('modal-brand-logo').innerText = car.brand;
+      document.getElementById('modal-title').innerText = `${car.brand} ${car.model}`;
+      document.getElementById('modal-price').innerText = `${car.price.toLocaleString()} €`;
+      document.getElementById('modal-market-val').innerText = `${car.marketPrice.toLocaleString()} €`;
+      document.getElementById('modal-score').innerText = `${car.score} / 10`;
+      document.getElementById('modal-external-link').href = car.link;
+
+      // Risk level styling
+      const riskEl = document.getElementById('modal-risk');
+      riskEl.innerText = `${car.risk} Rizik`;
+      riskEl.className = "text-xs font-bold mt-1 " + (car.risk === 'Nizak' ? 'text-emerald-400' : car.risk === 'Srednji' ? 'text-amber-400' : 'text-red-400');
+
+      // Deal details
+      const diff = car.marketPrice - car.price;
+      const dealTag = document.getElementById('modal-deal-tag');
+      const dealDesc = document.getElementById('modal-deal-desc');
+
+      if (diff > 300) {
+        dealTag.innerText = "Izuzetna Prilika";
+        dealTag.className = "text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold";
+        dealDesc.innerText = `Ovo vozilo je procenjeno po ceni koja je čak ${diff.toLocaleString()}€ niža od proseka za ovu klasu i opremu. Algoritam ne beleži veće havarije ili skrivene manmane.`;
+      } else if (diff < -300) {
+        dealTag.innerText = "Iznad Proseka";
+        dealTag.className = "text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-semibold";
+        dealDesc.innerText = `Prodajna cena je za ${Math.abs(diff).toLocaleString()}€ viša od procenjene tržišne vrednosti. Savetujemo pregovaranje oko cene ili proveru dodatne opreme.`;
+      } else {
+        dealTag.innerText = "Fer Tržišna Cena";
+        dealTag.className = "text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-semibold";
+        dealDesc.innerText = `Cena vozila je u potpunom skladu sa trenutnim stanjem na domaćem i regionalnom tržištu polovnjaka.`;
+      }
+
+      // Tech Specs
+      document.getElementById('modal-specs-grid').innerHTML = `
+        <div><span class="text-slate-500 block">Godište:</span><span class="font-bold text-slate-200">${car.year}.</span></div>
+        <div><span class="text-slate-500 block">Kilometraža:</span><span class="font-bold text-slate-200">${car.mileage.toLocaleString()} km</span></div>
+        <div><span class="text-slate-500 block">Motor / Snaga:</span><span class="font-bold text-slate-200">${car.engine}</span></div>
+        <div><span class="text-slate-500 block">Menjač:</span><span class="font-bold text-slate-200">${car.transmission}</span></div>
+        <div><span class="text-slate-500 block">Gorivo:</span><span class="font-bold text-slate-200">${car.fuel}</span></div>
+        <div><span class="text-slate-500 block">Karoserija:</span><span class="font-bold text-slate-200">${car.body}</span></div>
+      `;
+
+      // Checks
+      document.getElementById('modal-checks').innerHTML = car.checks.map(chk => `
+        <li class="flex items-start gap-2">
+          <i class="fa-solid fa-check text-brand-500 mt-0.5 text-[10px]"></i>
+          <span>${chk}</span>
+        </li>
+      `).join('');
+
+      document.getElementById('car-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('car-modal').classList.add('hidden');
+    }
+
+    // --- IMPORT DUTY CALCULATOR LOGIC ---
+    function calculateImportDuty() {
+      const price = parseFloat(document.getElementById('calc-price').value) || 0;
+      const cc = parseFloat(document.getElementById('calc-cc').value) || 0;
+      const isEur1 = document.getElementById('calc-eur1').checked;
+      const euro = document.getElementById('calc-euro').value;
+
+      // Custom duty
+      const carinaPct = isEur1 ? 0 : 12.5;
+      const carinaVal = price * (carinaPct / 100);
+
+      // Tax base
+      const pdvBase = price + carinaVal;
+      const pdvVal = pdvBase * 0.20;
+
+      // AMSS Homologation
+      const amssVal = 120;
+
+      // Eco tax calculation
+      let ekoVal = 200;
+      if (euro === 'euro5') ekoVal = 350;
+      if (euro === 'euro4') ekoVal = 500;
+      if (cc > 2000) ekoVal += 200;
+
+      const totalDuty = carinaVal + pdvVal + amssVal + ekoVal;
+      const grandTotal = price + totalDuty;
+
+      document.getElementById('out-carina-pct').innerText = `${carinaPct}%`;
+      document.getElementById('out-carina').innerText = `${carinaVal.toFixed(0)} €`;
+      document.getElementById('out-pdv').innerText = `${pdvVal.toFixed(0)} €`;
+      document.getElementById('out-amss').innerText = `${amssVal} €`;
+      document.getElementById('out-eko').innerText = `${ekoVal} €`;
+
+      document.getElementById('out-total-duty').innerText = `${totalDuty.toFixed(0)} €`;
+      document.getElementById('out-grand-total').innerText = `${grandTotal.toFixed(0)} €`;
+    }
+
+    // --- ANALYTICS CHARTS (CHART.JS) ---
+    function initCharts() {
+      // Chart 1: Depreciation
+      const ctx1 = document.getElementById('depreciationChart').getContext('2d');
+      new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: ['1 God.', '2 God.', '3 God.', '4 God.', '5 God.', '6 God.'],
+          datasets: [
+            {
+              label: 'Premium SUV (Npr. BMW X5)',
+              data: [100, 82, 71, 62, 54, 48],
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Kompakt Hibrid (Npr. RAV4)',
+              data: [100, 89, 81, 75, 69, 64],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { size: 11 } } }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // Chart 2: Fuel Demand
+      const ctx2 = document.getElementById('fuelDemandChart').getContext('2d');
+      new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Dizel', 'Benzin', 'Hibrid', 'Električni'],
+          datasets: [{
+            data: [52, 28, 15, 5],
+            backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  </script>
+  <script src="live.js"></script>
+</body>
+</html>
